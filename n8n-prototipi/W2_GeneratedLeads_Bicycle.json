@@ -1,0 +1,350 @@
+{
+  "name": "W2_GeneratedLeads_Bicycle",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1KmduRcQ9yJSoW2HMfEkhGjlBMYCMqin7esWOO8ASZ9g",
+          "mode": "list",
+          "cachedResultName": "Manual verification client DB",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KmduRcQ9yJSoW2HMfEkhGjlBMYCMqin7esWOO8ASZ9g/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Foglio1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1KmduRcQ9yJSoW2HMfEkhGjlBMYCMqin7esWOO8ASZ9g/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "orderStatus",
+              "lookupValue": "PENDING_VERIFICATION"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        0,
+        -80
+      ],
+      "id": "e8ee6444-16e7-41c1-9103-af498861cd94",
+      "name": "LETTURA DB OGNI 6 ORE (STATUS)",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "78DXOMq3gmiXam1g",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Prendi tutti gli ordini dal nodo precedente\nconst items = $input.all();\n\n// ⚠️ NUOVO: Gestisci caso DB vuoto\nif (items.length === 0) {\n  console.log(\"Nessun ordine PENDING_VERIFICATION trovato. Workflow terminato.\");\n  return [];  // Ritorna array vuoto, workflow si ferma senza errori\n}\n\n// 2. Prendi l'ora attuale\nconst now = new Date();\n\n// 3. Definisci la soglia: 48 ore in millisecondi\nconst threshold48h = 48 * 60 * 60 * 1000;\n\n// 4. Per ogni ordine, calcola il tempo trascorso\nconst processedItems = items.map(item => {\n  const timestampString = item.json.Timestamp;\n  const createdAt = new Date(timestampString);\n  const elapsed = now - createdAt;\n  const hoursElapsed = elapsed / (60 * 60 * 1000);\n  const shouldDiscard = elapsed > threshold48h;\n  \n  return {\n    json: {\n      ...item.json,\n      hoursElapsed: Math.round(hoursElapsed),\n      shouldDiscard: shouldDiscard\n    }\n  };\n});\n\n// 5. Ritorna tutti gli items processati\nreturn processedItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -80
+      ],
+      "id": "e09c9cb0-4349-4c5e-99e4-de1e3ffb1db3",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b6ad8b5b-6f34-4f60-9244-aa964cc57d7d",
+              "leftValue": "={{ $json.shouldDiscard }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        384,
+        -80
+      ],
+      "id": "33b6a003-eb78-4a9f-a810-7c59337154f5",
+      "name": "IF: shouldDiscard (>48h)"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1p2g-_Fo1Gz-QJAo7LtV3KVw_IhxXrK0eRfBjY8VY2-c",
+          "mode": "list",
+          "cachedResultName": "WF2_DB _ARCHIVE/ NO_SHOW_UP ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1p2g-_Fo1Gz-QJAo7LtV3KVw_IhxXrK0eRfBjY8VY2-c/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Foglio1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1p2g-_Fo1Gz-QJAo7LtV3KVw_IhxXrK0eRfBjY8VY2-c/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $json.Id }}",
+            "customerName": "= {{ $json.customerName }}",
+            "Phone": "={{ $json.Phone }}",
+            "Email": "={{ $json.Email }}",
+            "Adress": "={{ $json.Adress }}",
+            "orderStatus": "DISCARDED",
+            "Timestamp": "={{ $json.Timestamp }}",
+            "discardedAt ": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "customerName",
+              "displayName": "customerName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Adress",
+              "displayName": "Adress",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "orderStatus",
+              "displayName": "orderStatus",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "discardedAt ",
+              "displayName": "discardedAt ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        624,
+        -96
+      ],
+      "id": "b9253fb7-3950-4bce-b0d2-12eda7b39a36",
+      "name": "WF2_DB_ARCHIVE / NO_SHOW_UP",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "78DXOMq3gmiXam1g",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -224,
+        -80
+      ],
+      "id": "36621032-91b1-4347-af6a-66e79d7b7424",
+      "name": "TriggerClock every 6h max >48h"
+    },
+    {
+      "parameters": {
+        "content": "CREATA LA MAPPATURA. BISOGNA INTEGRARE ALCUNI DATI. (COLONNE GS) QUESTA E' LA STRUTTURA DEL W2:\n\n⏰ Schedule Trigger - ogni 6h\n\n📊 Google Sheets: Read - leggi PENDING_VERIFICATION\n\n💻 Code - calcola tempo + shouldDiscard\n\n🔀 IF - shouldDiscard = true?\n\n✏️ Google Sheets: Update - status → DISCARDED\n\n📁 Google Sheets: Append  - copia in Cestinati\n\n",
+        "height": 496,
+        "width": 1312,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -272,
+        -368
+      ],
+      "typeVersion": 1,
+      "id": "56e061dd-3625-40f0-a9d4-d8322c23d836",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "sendTo": "fabiodropshipping22@gmail.com",
+        "subject": "no response > 48h",
+        "emailType": "text",
+        "message": "hey Team, just to keep you updated about client id..... we couldn't reach them and they not reply, so the order is canceld  and archive. best",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        832,
+        -96
+      ],
+      "id": "b7fbcb5b-c352-4316-9f74-400d421ed735",
+      "name": "MANDA_EMAIL_ALTEAM",
+      "webhookId": "922cf5d0-310a-40a4-8623-4a793318d40a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "53D8kOUWF37L6Qfx",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "LETTURA DB OGNI 6 ORE (STATUS)": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "IF: shouldDiscard (>48h)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF: shouldDiscard (>48h)": {
+      "main": [
+        [
+          {
+            "node": "WF2_DB_ARCHIVE / NO_SHOW_UP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TriggerClock every 6h max >48h": {
+      "main": [
+        [
+          {
+            "node": "LETTURA DB OGNI 6 ORE (STATUS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WF2_DB_ARCHIVE / NO_SHOW_UP": {
+      "main": [
+        [
+          {
+            "node": "MANDA_EMAIL_ALTEAM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "863cec88-06ea-4458-8080-4d6115928fb0",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c6340a675df2a727ab15ed3f6d8d62880dbe20df9d0152fe8457b488c5c92e1e"
+  },
+  "id": "rksdcNZd5e8QZ9ykaBwa6",
+  "tags": []
+}
